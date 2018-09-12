@@ -32,6 +32,10 @@ pkg.deps:
     - "@apache-mynewt-core/sys/console/full"
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
+    - "@mynewt-dw1000-core/lib/nranges"
+
+pkg.init:
+    dw1000_nranges_pkg_init: 410
 
 pkg.cflags:
     - "-std=gnu99"

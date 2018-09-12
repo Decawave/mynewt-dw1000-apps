@@ -22,11 +22,11 @@ syscfg.defs:
     DEVICE_ID:
         description: >
             Device ID
-        value: ((uint16_t){0x1234}) 
+        value: ((uint16_t){0xAAAA})
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
-        value: ((uint16_t){0x8000}) 
+        value: ((uint16_t){0x8000})
     N_RANGES_NPLUS_TWO_MSGS:
         description: >
             To enable/disable the 2n+2ranges method

@@ -48,7 +48,7 @@
 #include <dw1000/dw1000_pan.h>
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
-#include <dw1000_nranges.h>
+#include <nranges/dw1000_nranges.h>
 dw1000_nranges_instance_t nranges_instance;
 #endif
 
@@ -137,6 +137,17 @@ static void complete_cb(struct _dw1000_dev_instance_t *inst) {
     }
 }
 
+#if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
+void dw1000_nranges_pkg_init(void)
+{
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_nranges_instance_t * nranges = &nranges_instance;
+    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
+    nranges->device_type = DWT_NRNG_RESPONDER;
+    dw1000_nranges_init(inst, nranges);
+}
+#endif
+
 int main(int argc, char **argv){
     int rc;
 
@@ -170,12 +181,6 @@ int main(int argc, char **argv){
         os_eventq_run(os_eventq_dflt_get());
         os_cputime_delay_usecs(5000);
     }
-#endif
-#if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
-    dw1000_nranges_instance_t * nranges = &nranges_instance;
-    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
-    nranges->initiator = 0;
-    dw1000_nranges_init(inst, nranges);
 #endif
     printf("device_id=%lX\n",inst->device_id);
     printf("PANID=%X\n",inst->PANID);

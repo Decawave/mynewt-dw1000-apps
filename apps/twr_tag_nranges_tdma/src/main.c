@@ -51,7 +51,7 @@
 #include <dw1000/dw1000_pan.h>
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
-#include <dw1000_nranges.h>
+#include <nranges/dw1000_nranges.h>
 dw1000_nranges_instance_t nranges_instance;
 #endif
 
@@ -281,6 +281,17 @@ complete_cb(struct _dw1000_dev_instance_t * inst){
     return true;
 }
 
+#if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
+void dw1000_nranges_pkg_init(void)
+{
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
+    dw1000_nranges_instance_t * nranges = &nranges_instance;
+    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
+    nranges->device_type = DWT_NRNG_INITIATOR;
+    nranges->nnodes= MYNEWT_VAL(N_NODES);
+    dw1000_nranges_init(inst, nranges);
+}
+#endif
 #define SLOT MYNEWT_VAL(SLOT_ID)
 #define ALT_SLOT 0
 int main(int argc, char **argv){
@@ -322,12 +333,7 @@ int main(int argc, char **argv){
     dw1000_pan_start(inst, DWT_NONBLOCKING);
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
-    dw1000_nranges_instance_t * nranges = &nranges_instance;
-    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
-    nranges->initiator = 1;
-    nranges->nnodes= MYNEWT_VAL(N_NODES);
-    dw1000_nranges_init(inst, nranges);
-    printf("number of nodes  ===== %u \n",nranges->nnodes);
+    printf("number of nodes  ===== %u \n",nranges_instance.nnodes);
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
