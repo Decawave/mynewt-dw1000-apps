@@ -168,6 +168,7 @@ int main(int argc, char **argv){
     dw1000_set_panid(inst,inst->PANID);
     dw1000_set_address16(inst,inst->my_short_address);
     dw1000_mac_init(inst, NULL);
+    dw1000_set_dblrxbuff(inst, true);
     dw1000_mac_framefilter(inst, DWT_FF_DATA_EN);
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));

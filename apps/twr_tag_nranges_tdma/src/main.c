@@ -90,7 +90,7 @@ static void set_default_rng_params(twr_frame_t *frame , uint16_t nframes)
 
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 #if MYNEWT_VAL(TDMA_ENABLED)
-static uint16_t g_slot[5] = {0,1,2,3,4};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,29,30,
+static uint16_t g_slot[10] = {0,1,2,3,4,5,6,7};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,29,30,
        // 31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62};
 #endif
 
@@ -132,14 +132,15 @@ slot_timer_cb(struct os_event *ev){
     uint64_t dx_time = (clk->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time  & 0xFFFFFFFE00UL;
-    //    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    dw1000_set_dblrxbuff(inst, true);
+    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
     if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
-    }else{
-        //        uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-        //        printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     }
+    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+    dw1000_set_dblrxbuff(inst, false);
     twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
     //printf("rng->idx == %d \n",(rng->idx-1)%rng->nframes);
@@ -168,7 +169,6 @@ slot_timer_cb(struct os_event *ev){
             (previous_frame+i+nnodes)->code = DWT_DS_TWR_NRNG_END;
             (previous_frame+i)->code = DWT_DS_TWR_NRNG_END;
         }
-        printf("time-secs:: %lu\n", os_cputime_ticks_to_usecs(os_cputime_get32())/1000000);
         rng->idx = 0xffff;
         nranges->resp_count = 0;
     }
@@ -186,7 +186,7 @@ slot_timer_cb(struct os_event *ev){
  *
  * output parameters
  *
- * returns none 
+ * returns bool 
  */
 static bool
 timeout_cb(struct _dw1000_dev_instance_t * inst) {
@@ -216,23 +216,24 @@ timeout_cb(struct _dw1000_dev_instance_t * inst) {
  *
  * output parameters
  *
- * returns none 
+ * returns bool 
  */
 static bool
 error_cb(struct _dw1000_dev_instance_t * inst) {
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }   
-    uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
+#ifdef VERBOSE
+    //uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"error_cb\": \"start_rx_error\"}\n",utime);
     if (inst->status.start_tx_error)
         printf("{\"utime\": %lu,\"error_cb\":\"start_tx_error\"}\n",utime);
     if (inst->status.rx_error)
         printf("{\"utime\": %lu,\"error_cb\":\"rx_error\"}\n",utime);
-
+#endif
     if (inst->tdma->status.awaiting_superframe){
-        printf("{\"utime\": %lu,\"error_cb\":\"awaiting_superframe\"}\n",utime); 
+        //printf("{\"utime\": %lu,\"error_cb\":\"awaiting_superframe\"}\n",utime); 
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
     }
@@ -259,7 +260,7 @@ tx_complete_cb(dw1000_dev_instance_t* inst){
  *
  * output parameters
  *
- * returns none 
+ * returns bool 
  */
 /* The timer callout */
 //static struct os_callout slot_complete_callout;
@@ -346,7 +347,7 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(TDMA_ENABLED) 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
-    tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), 5);
+    tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), 10);
     tdma_assign_slot(inst->tdma, slot_timer_cb, g_slot[SLOT], &g_slot[SLOT]);
 #else
     dw1000_set_rx_timeout(inst, 0);
