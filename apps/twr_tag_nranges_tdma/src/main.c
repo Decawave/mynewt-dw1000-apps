@@ -141,25 +141,10 @@ slot_timer_cb(struct os_event *ev){
     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     dw1000_set_dblrxbuff(inst, false);
-    twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
+
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
-    //printf("rng->idx == %d \n",(rng->idx-1)%rng->nframes);
-
-    if (inst->status.start_rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    if (inst->status.start_tx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"start_tx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    if (inst->status.rx_error)
-        printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-    if (inst->status.rx_timeout_error)
-        printf("{\"utime\":%lu,\"Rx-TimeOut Error::missing %u responses\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),nnodes-nranges->resp_count);
-
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error
-            || inst->status.rx_timeout_error){
-        rng->idx = 0xffff;
-    }
-
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL) {
+        twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
         previous_frame = rng->frames[0];
         int i;
         for(i = 0 ; i < nranges->resp_count ; i++)
@@ -169,10 +154,9 @@ slot_timer_cb(struct os_event *ev){
             (previous_frame+i+nnodes)->code = DWT_DS_TWR_NRNG_END;
             (previous_frame+i)->code = DWT_DS_TWR_NRNG_END;
         }
-        rng->idx = 0xffff;
-        nranges->resp_count = 0;
     }
-
+    rng->idx = 0xffff;
+    nranges->resp_count = 0;
 }
 
 /*! 
