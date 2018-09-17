@@ -57,7 +57,7 @@ dw1000_nranges_instance_t nranges_instance;
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x1fff        // Receive response timeout in usec
+    .rx_timeout_period = 0x0800        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
