@@ -33,6 +33,9 @@ pkg.deps:
     - "@apache-mynewt-core/sys/shell"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@mynewt-dw1000-core/lib/nranges"
+    - "@mynewt-dw1000-core/lib/dsp"
+    - "@mynewt-timescale-lib/lib/timescale"
+    - "@mynewt-timescale-lib/lib/clkcal"
 
 pkg.init:
     dw1000_nranges_pkg_init: 410
@@ -40,6 +43,7 @@ pkg.init:
 pkg.cflags:
     - "-std=gnu99"
     - "-fms-extensions"
+    - "-DNRF52"
 
 pkg.lflags:
     - "-lm"

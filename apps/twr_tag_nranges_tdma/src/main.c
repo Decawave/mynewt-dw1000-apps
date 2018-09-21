@@ -88,9 +88,10 @@ static void set_default_rng_params(twr_frame_t *frame , uint16_t nframes)
     }
 }
 
-#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
+//#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
+#define NSLOTS 10
 #if MYNEWT_VAL(TDMA_ENABLED)
-static uint16_t g_slot[10] = {0,1,2,3,4,5,6,7};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,29,30,
+static uint16_t g_slot[NSLOTS] = {0};//{0,1,126,127};//,4,5,6,7,8,9,10,11,12,13,14,15,18,19,20,21,22,23,24,25,26,27,28,29,30,
        // 31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,55,56,57,58,59,60,61,62};
 #endif
 
@@ -132,7 +133,6 @@ slot_timer_cb(struct os_event *ev){
     uint64_t dx_time = (clk->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time  & 0xFFFFFFFE00UL;
-    dw1000_set_dblrxbuff(inst, true);
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
     if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
@@ -140,7 +140,6 @@ slot_timer_cb(struct os_event *ev){
     }
     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
-    dw1000_set_dblrxbuff(inst, false);
 
     twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL) {
@@ -150,6 +149,8 @@ slot_timer_cb(struct os_event *ev){
         for(i = 0 ; i < nranges->resp_count ; i++)
         {
             float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(previous_frame+i, previous_frame+i+nnodes));
+            if (range == 0 || range > 20000)
+                break;
             printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",(previous_frame+i)->src_address,(previous_frame+i)->dst_address, (uint32_t)(range*1000));
             (previous_frame+i+nnodes)->code = DWT_DS_TWR_NRNG_END;
             (previous_frame+i)->code = DWT_DS_TWR_NRNG_END;
@@ -331,7 +332,7 @@ int main(int argc, char **argv){
 #if MYNEWT_VAL(TDMA_ENABLED) 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
-    tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), 10);
+    tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), NSLOTS);
     tdma_assign_slot(inst->tdma, slot_timer_cb, g_slot[SLOT], &g_slot[SLOT]);
 #else
     dw1000_set_rx_timeout(inst, 0);
