@@ -57,7 +57,7 @@ dw1000_nranges_instance_t nranges_instance;
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0800        // Receive response timeout in usec
+    .rx_timeout_period = 0x0B00        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -149,8 +149,6 @@ slot_timer_cb(struct os_event *ev){
         for(i = 0 ; i < nranges->resp_count ; i++)
         {
             float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(previous_frame+i, previous_frame+i+nnodes));
-            if (range == 0 || range > 20000)
-                break;
             printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",(previous_frame+i)->src_address,(previous_frame+i)->dst_address, (uint32_t)(range*1000));
             (previous_frame+i+nnodes)->code = DWT_DS_TWR_NRNG_END;
             (previous_frame+i)->code = DWT_DS_TWR_NRNG_END;
