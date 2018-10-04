@@ -54,7 +54,7 @@
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
 #include <nranges/dw1000_nranges.h>
-dw1000_nranges_instance_t nranges_instance;
+dw1000_nranges_instance_t *nranges_instance = NULL;
 #endif
 #if MYNEWT_VAL(TIMESCALE)
 #include <timescale/timescale.h> 
@@ -80,7 +80,7 @@ static dw1000_pan_config_t pan_config = {
 };
 #endif
 
-static twr_frame_t twr[] = {
+static nrng_frame_t twr[] = {
     [0] = {
         .fctrl = FCNTL_IEEE_N_RANGES_16,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                // PAN ID (0xDECA)
@@ -103,7 +103,7 @@ static twr_frame_t twr[] = {
     }
 };
 
-void print_frame(const char * name, twr_frame_t *twr ){
+void print_frame(const char * name, nrng_frame_t *twr ){
     printf("%s{\n\tfctrl:0x%04X,\n", name, twr->fctrl);
     printf("\tseq_num:0x%02X,\n", twr->seq_num);
     printf("\tPANID:0x%04X,\n", twr->PANID);
@@ -122,11 +122,11 @@ static void nrange_complete_cb(struct os_event *ev) {
 
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng;
-    assert(inst->rng->nframes > 0);
+    dw1000_nranges_instance_t *nranges = nranges_instance;
 
-    twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
+    nrng_frame_t * previous_frame = nranges->frames[(nranges->idx-1)%(nranges->nframes/FRAMES_PER_RANGE)][FIRST_FRAME_IDX];
+    nrng_frame_t * frame = nranges->frames[(nranges->idx)%(nranges->nframes/FRAMES_PER_RANGE)][SECOND_FRAME_IDX];
+
     if (inst->status.start_rx_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\": \"start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     if (inst->status.start_tx_error)
@@ -144,8 +144,8 @@ static void nrange_complete_cb(struct os_event *ev) {
 
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
         previous_frame = previous_frame;
-        uint32_t time_of_flight = (uint32_t) dw1000_rng_twr_to_tof(rng);
-        float range = dw1000_rng_tof_to_meters(dw1000_rng_twr_to_tof(rng));
+        uint32_t time_of_flight = (uint32_t) dw1000_nranges_twr_to_tof_frames(previous_frame, frame);
+        float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(previous_frame, frame));
         float rssi = dw1000_get_rssi(inst);
         //print_frame("1st=", previous_frame);
         //print_frame("2nd=", frame);
@@ -242,10 +242,8 @@ slot_timer_cb(struct os_event * ev){
 void dw1000_nranges_pkg_init(void)
 {
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_nranges_instance_t * nranges = &nranges_instance;
-    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
-    nranges->device_type = DWT_NRNG_RESPONDER;
-    dw1000_nranges_init(inst, nranges);
+    nranges_instance = dw1000_nranges_init(inst, DWT_NRNG_RESPONDER, sizeof(twr)/sizeof(nrng_frame_t), 0);
+    dw1000_nrng_set_frames(inst, twr, sizeof(twr)/sizeof(nrng_frame_t));
 }
 #endif
 
@@ -270,8 +268,8 @@ int main(int argc, char **argv){
     dw1000_set_address16(inst,inst->my_short_address);
     dw1000_mac_init(inst, NULL);
     dw1000_mac_framefilter(inst, DWT_FF_RSVD_EN);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
+    dw1000_rng_init(inst, &rng_config, 0);
+    //dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(nrng_frame_t));
 #if MYNEWT_VAL(DW1000_PAN)
     dw1000_pan_init(inst, &pan_config);
     dw1000_pan_start(inst, DWT_NONBLOCKING); // Don't block on the eventq_dflt

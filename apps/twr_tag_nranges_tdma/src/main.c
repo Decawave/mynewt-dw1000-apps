@@ -52,12 +52,12 @@
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
 #include <nranges/dw1000_nranges.h>
-dw1000_nranges_instance_t nranges_instance;
+dw1000_nranges_instance_t *nranges_instance = NULL;
 #endif
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0B00        // Receive response timeout in usec
+    .rx_timeout_period = 0x0c00        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -69,7 +69,7 @@ static dw1000_pan_config_t pan_config = {
 
 #define N_FRAMES MYNEWT_VAL(N_NODES)*2
 
-static twr_frame_t twr[N_FRAMES] = {
+static nrng_frame_t twr[N_FRAMES] = {
     [0] = {
         .fctrl = FCNTL_IEEE_N_RANGES_16, // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                 // PAN ID (0xDECA)
@@ -77,7 +77,7 @@ static twr_frame_t twr[N_FRAMES] = {
     }
 };
 
-static void set_default_rng_params(twr_frame_t *frame , uint16_t nframes)
+static void set_default_rng_params(nrng_frame_t *frame , uint16_t nframes)
 {
     uint16_t i ;
     for(i = 1 ; i<nframes ; i++)
@@ -87,7 +87,6 @@ static void set_default_rng_params(twr_frame_t *frame , uint16_t nframes)
         (frame+i)->code  = frame->code;
     }
 }
-
 //#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 #define NSLOTS 10
 #if MYNEWT_VAL(TDMA_ENABLED)
@@ -117,9 +116,7 @@ slot_timer_cb(struct os_event *ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_rng_instance_t * rng = inst->rng;
-    dw1000_nranges_instance_t * nranges = &nranges_instance;
-    uint16_t nnodes = nranges->nnodes;
+    dw1000_nranges_instance_t * nranges = nranges_instance;
     nranges->t1_final_flag = 1;
 
     clkcal_instance_t * clk = inst->ccp->clkcal;
@@ -140,21 +137,18 @@ slot_timer_cb(struct os_event *ev){
     }
     uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+    
+    for(int i=0; i<nranges->nnodes; i++){
+        nrng_frame_t *prev_frame = nranges->frames[i][FIRST_FRAME_IDX];
+        nrng_frame_t *frame = nranges->frames[i][SECOND_FRAME_IDX];
 
-    twr_frame_t * frame = rng->frames[(rng->idx)%rng->nframes];
-    if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL) {
-        twr_frame_t * previous_frame = rng->frames[(rng->idx-1)%rng->nframes];
-        previous_frame = rng->frames[0];
-        int i;
-        for(i = 0 ; i < nranges->resp_count ; i++)
-        {
-            float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(previous_frame+i, previous_frame+i+nnodes));
-            printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",(previous_frame+i)->src_address,(previous_frame+i)->dst_address, (uint32_t)(range*1000));
-            (previous_frame+i+nnodes)->code = DWT_DS_TWR_NRNG_END;
-            (previous_frame+i)->code = DWT_DS_TWR_NRNG_END;
+        if ((frame->code == DWT_DS_TWR_NRNG_FINAL && prev_frame->code == DWT_DS_TWR_NRNG_T2)\
+             || (prev_frame->code == DWT_DS_TWR_NRNG_EXT_T2 && frame->code == DWT_DS_TWR_NRNG_EXT_FINAL)) {
+            float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(frame, prev_frame));
+            printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
+            frame->code = DWT_DS_TWR_NRNG_END;
         }
     }
-    rng->idx = 0xffff;
     nranges->resp_count = 0;
 }
 
@@ -269,11 +263,10 @@ complete_cb(struct _dw1000_dev_instance_t * inst){
 void dw1000_nranges_pkg_init(void)
 {
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_nranges_instance_t * nranges = &nranges_instance;
-    memset(nranges,0,sizeof(dw1000_nranges_instance_t));
-    nranges->device_type = DWT_NRNG_INITIATOR;
-    nranges->nnodes= MYNEWT_VAL(N_NODES);
-    dw1000_nranges_init(inst, nranges);
+    uint16_t nnodes = MYNEWT_VAL(N_NODES);
+    set_default_rng_params(twr, sizeof(twr)/sizeof(nrng_frame_t));
+    nranges_instance = dw1000_nranges_init(inst, DWT_NRNG_INITIATOR, sizeof(twr)/sizeof(nrng_frame_t), nnodes);
+    dw1000_nrng_set_frames(inst, twr, sizeof(twr)/sizeof(nrng_frame_t));
 }
 #endif
 #define SLOT MYNEWT_VAL(SLOT_ID)
@@ -297,9 +290,8 @@ int main(int argc, char **argv){
 
     dw1000_set_panid(inst,inst->PANID);
     dw1000_mac_init(inst, &inst->config);
-    dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
-    dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));
-    set_default_rng_params(twr, sizeof(twr)/sizeof(twr_frame_t));
+    dw1000_rng_init(inst, &rng_config, 0);
+    //dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(nrng_frame_t));
 
     tdma_cbs.tx_error_cb = error_cb;
     tdma_cbs.rx_error_cb = error_cb;
@@ -317,7 +309,7 @@ int main(int argc, char **argv){
     dw1000_pan_start(inst, DWT_NONBLOCKING);
 #endif
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
-    printf("number of nodes  ===== %u \n",nranges_instance.nnodes);
+    printf("number of nodes  ===== %u \n",nranges_instance->nnodes);
 #endif
     printf("device_id = 0x%lX\n",inst->device_id);
     printf("PANID = 0x%X\n",inst->PANID);
@@ -325,7 +317,7 @@ int main(int argc, char **argv){
     printf("partID = 0x%lX\n",inst->partID);
     printf("lotID = 0x%lX\n",inst->lotID);
     printf("xtal_trim = 0x%X\n",inst->xtal_trim);
-    printf("no of frames == %u \n",sizeof(twr)/sizeof(twr_frame_t));
+    printf("no of frames == %u \n",sizeof(twr)/sizeof(nrng_frame_t));
 
 #if MYNEWT_VAL(TDMA_ENABLED) 
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
