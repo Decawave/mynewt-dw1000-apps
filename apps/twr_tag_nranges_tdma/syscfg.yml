@@ -39,3 +39,12 @@ syscfg.defs:
         description: >
             SLOT_ID for the Device
         value: 1
+    NODE_START_SLOT_ID:
+        description: >
+            Slot ID from which the nodes should respond
+        value: 1
+    NODE_END_SLOT_ID:
+        description: >
+            Slot ID till which the nodes should respond
+        value: 7
+    

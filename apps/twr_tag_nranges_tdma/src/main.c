@@ -131,7 +131,7 @@ slot_timer_cb(struct os_event *ev){
 #endif
     dx_time = dx_time  & 0xFFFFFFFE00UL;
     uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG).start_tx_error){
+    if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }
