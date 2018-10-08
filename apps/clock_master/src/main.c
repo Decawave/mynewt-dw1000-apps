@@ -40,8 +40,16 @@
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
-#include <dw1000/dw1000_ccp.h>
 
+#include <ccp/dw1000_ccp.h>
+#include <tdma/dw1000_tdma.h>
+
+//#define DIAGMSG(s,u) printf(s,u)
+#ifndef DIAGMSG
+#define DIAGMSG(s,u)
+#endif
+
+#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0C00,         // Send Time delay in usec.
@@ -57,9 +65,25 @@ static twr_frame_t twr[] = {
     [1] = {
         .fctrl = 0x8841,                // frame control (0x8841 to indicate a data frame using 16-bit addressing).
         .PANID = 0xDECA,                 // PAN ID (0xDECA)
-        .code = DWT_TWR_INVALID,
+        .code = DWT_TWR_INVALID
     }
 };
+
+#if MYNEWT_VAL(TDMA_ENABLED)
+/** 
+ * API for the zeroth slot.
+ * The slot0 event is called by 
+ *
+ * @param ev  Pointer to os_event.
+ *
+ * @return void
+ */
+
+static void 
+slot0_event_cb(struct os_event * ev){
+    DIAGMSG("{\"utime\": %lu,\"msg\": \"slot0_event_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32())); 
+}
+#endif
 
 int main(int argc, char **argv){
     int rc;
@@ -69,9 +93,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
     
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);   
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0); 
 
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID); 
@@ -82,8 +104,13 @@ int main(int argc, char **argv){
     dw1000_rng_init(inst, &rng_config, sizeof(twr)/sizeof(twr_frame_t));
     dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(twr_frame_t));  
     
-    dw1000_ccp_init(inst, 2, inst->my_long_address);   
-    dw1000_ccp_start(inst);
+    dw1000_ccp_init(inst, 2, inst->my_long_address);  
+#if MYNEWT_VAL(TDMA_ENABLED)
+    tdma_instance_t * tdma = tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), NSLOTS); 
+    for (uint16_t i=0; i < NSLOTS; i++) 
+        tdma_assign_slot(tdma, slot0_event_cb, i, NULL);
+#endif
+    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

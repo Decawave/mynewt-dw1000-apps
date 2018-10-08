@@ -41,17 +41,14 @@
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
-#endif
 #if MYNEWT_VAL(DW1000_PAN)
 #include <dw1000/dw1000_pan.h>
 #endif
 
 
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0600,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0800         // Receive response timeout in usec
+    .tx_holdoff_delay = 0x0380,         // Send Time delay in usec.
+    .rx_timeout_period = 0x0            // timeout delta usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -90,7 +87,7 @@ void print_frame(const char * name, twr_frame_t *twr ){
 /* The timer callout */
 static struct os_callout blinky_callout;
 
-#define SAMPLE_FREQ 25.0
+#define SAMPLE_FREQ 100.0
 static void timer_ev_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
@@ -115,8 +112,7 @@ static void timer_ev_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
    
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error 
-        ||  inst->status.rx_timeout_error){
+    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error ||  inst->status.rx_timeout_error){
         inst->status.start_tx_error = inst->status.start_rx_error = inst->status.rx_error = inst->status.rx_timeout_error = 0;
         dw1000_set_rx_timeout(inst, 0);
         dw1000_start_rx(inst); 
@@ -175,9 +171,7 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
 
-    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);    
+    dw1000_dev_instance_t * inst = hal_dw1000_inst(0);  
  
     inst->PANID = 0xDECA;
     inst->my_short_address = MYNEWT_VAL(DEVICE_ID);
@@ -198,13 +192,15 @@ int main(int argc, char **argv){
         os_cputime_delay_usecs(5000);
     } 
 #endif
-    printf("device_id=%lX\n",inst->device_id);
-    printf("PANID=%X\n",inst->PANID);
-    printf("DeviceID =%X\n",inst->my_short_address);
-    printf("partID =%lX\n",inst->partID);
-    printf("lotID =%lX\n",inst->lotID);
-    printf("xtal_trim =%X\n",inst->xtal_trim);
-    
+    printf("device_id = 0x%lX\n",inst->device_id);
+    printf("PANID = 0x%X\n",inst->PANID);
+    printf("DeviceID = 0x%X\n",inst->my_short_address);
+    printf("partID = 0x%lX\n",inst->partID);
+    printf("lotID = 0x%lX\n",inst->lotID);
+    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
+    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
+    printf("holdoff = %ld usec\n",rng_config.tx_holdoff_delay);
+
     init_timer(inst);
 
     dw1000_set_rx_timeout(inst, 0);
