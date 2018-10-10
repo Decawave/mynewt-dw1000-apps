@@ -33,19 +33,15 @@
 #include "mcu/mcu_sim.h"
 #endif
 
-#include "dw1000/dw1000_dev.h"
-#include "dw1000/dw1000_hal.h"
-#include "dw1000/dw1000_phy.h"
-#include "dw1000/dw1000_mac.h"
-#include "dw1000/dw1000_rng.h"
-#include "dw1000/dw1000_ftypes.h"
+#include <dw1000/dw1000_dev.h>
+#include <dw1000/dw1000_hal.h>
+#include <dw1000/dw1000_phy.h>
+#include <dw1000/dw1000_mac.h>
+#include <dw1000/dw1000_rng.h>
+#include <dw1000/dw1000_ftypes.h>
+#include <tdma/dw1000_tdma.h>
+#include <ccp/dw1000_ccp.h>
 
-#if MYNEWT_VAL(DW1000_CCP_ENABLED)
-#include <dw1000/dw1000_ccp.h>
-#endif
-#if MYNEWT_VAL(TDMA_ENABLED)
-#include <dw1000/dw1000_tdma.h>
-#endif
 #if MYNEWT_VAL(DW1000_LWIP)
 #include <dw1000/dw1000_lwip.h>
 #endif
@@ -62,16 +58,13 @@ dw1000_nranges_instance_t *nranges_instance = NULL;
 #include <clkcal/clkcal.h>
 
 #define VERBOSE0
-//#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
-#define NSLOTS 10
-#if MYNEWT_VAL(TDMA_ENABLED)
+#define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 static uint16_t g_slot[NSLOTS] = {0};
-#endif
-
+#define VERBOSE0
 static dw1000_rng_config_t rng_config = {
-    .tx_holdoff_delay = 0x0380,         // Send Time delay in usec.
-    .rx_timeout_period = 0x0,         // Receive response timeout in usec
-    .tx_guard_delay = 0x400
+    .tx_holdoff_delay = 0x0300,         // Send Time delay in usec.
+    .rx_timeout_period = 0x1,         // Receive response timeout in usec
+    .tx_guard_delay = 0x0400
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -183,15 +176,9 @@ static void complete_cb(struct _dw1000_dev_instance_t * inst){
     if(inst->fctrl != FCNTL_IEEE_N_RANGES_16){
         return;
     }
-    if (inst->tdma->status.awaiting_superframe){
-            uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
-            printf("{\"utime\": %lu,\"complete_cb\":\"awaiting_superframe\"}\n",utime); 
-            dw1000_set_rx_timeout(inst, 0);
-            dw1000_start_rx(inst); 
-    }else{     
-        os_callout_init(&slot_callout, os_eventq_dflt_get(), nrange_complete_cb, inst);
-        os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
-    }
+    os_callout_init(&slot_callout, os_eventq_dflt_get(), nrange_complete_cb, inst);
+    os_eventq_put(os_eventq_dflt_get(), &slot_callout.c_ev);
+    return;
 }
 
 
@@ -216,18 +203,26 @@ slot_timer_cb(struct os_event * ev){
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
-    clkcal_instance_t * clk = inst->ccp->clkcal;
+    dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
 
-#if MYNEWT_VAL(ADAPTIVE_TIMESCALE_ENABLED) 
-    uint64_t dx_time = (clk->epoch + (uint64_t) roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
+#if MYNEWT_VAL(CLOCK_CALIBRATION_ENABLED)
+    clkcal_instance_t * clk = ccp->clkcal;
+    uint64_t dx_time = (ccp->epoch + (uint64_t) roundf(clk->skew * (double)((idx * (uint64_t)tdma->period << 16)/tdma->nslots)));
 #else
-    uint64_t dx_time = (clk->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
+    uint64_t dx_time = (ccp->epoch + (uint64_t) ((idx * ((uint64_t)tdma->period << 16)/tdma->nslots)));
 #endif
-    dx_time = (dx_time - (MYNEWT_VAL(DW1000_IDLE_TO_RX_LATENCY) << 16)) & 0xFFFFFFFE00UL;
+    //Note: Time is referenced to the Rmarker symbol, to it is necessary to advance the rxtime by the SHR_duration such that the preamble is received.
+    dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
+
     dw1000_mac_framefilter(inst, DWT_FF_DATA_EN|DWT_FF_RSVD_EN);
     dw1000_set_delay_start(inst, dx_time);
-    dw1000_set_rx_timeout(inst, rng_config.rx_timeout_period);
+    uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
+                            + rng_config.tx_holdoff_delay
+                            + rng_config.tx_guard_delay;         // Remote side turn arroud time. 
+    dw1000_set_rx_timeout(inst, timeout);
+
+    dw1000_set_on_error_continue(inst, true);
     if(dw1000_start_rx(inst).start_rx_error){
          printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb:start_rx_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
     }
@@ -277,30 +272,29 @@ int main(int argc, char **argv){
         os_cputime_delay_usecs(5000);
     }
 #endif
-    printf("device_id=%lX\n",inst->device_id);
-    printf("PANID=%X\n",inst->PANID);
-    printf("DeviceID =%X\n",inst->my_short_address);
-    printf("partID =%lX\n",inst->partID);
-    printf("lotID =%lX\n",inst->lotID);
-    printf("xtal_trim =%X\n",inst->xtal_trim);
+    printf("device_id = 0x%lX\n",inst->device_id);
+    printf("PANID = 0x%X\n",inst->PANID);
+    printf("DeviceID = 0x%X\n",inst->my_short_address);
+    printf("partID = 0x%lX\n",inst->partID);
+    printf("lotID = 0x%lX\n",inst->lotID);
+    printf("xtal_trim = 0x%X\n",inst->xtal_trim);
+    printf("frame_duration = %d usec\n",dw1000_phy_frame_duration(&inst->attrib, sizeof(twr_frame_final_t)));
+    printf("holdoff = %d usec\n",(uint16_t)ceilf(dw1000_dwt_usecs_to_usecs(rng_config.tx_holdoff_delay))); 
 
     dw1000_rng_set_complete_cb(inst, complete_cb);
 
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
+    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
 #endif
 
-#if MYNEWT_VAL(TDMA_ENABLED)
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
 
-    tdma_init(inst, MYNEWT_VAL(TDMA_SUPERFRAME_PERIOD), NSLOTS);
+    tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), NSLOTS);
     for (uint16_t i = 1; i < NSLOTS; i++)
         tdma_assign_slot(inst->tdma, slot_timer_cb,  g_slot[i], &g_slot[i]);
-#else
-    dw1000_set_rx_timeout(inst, 0);
-    dw1000_start_rx(inst);
-#endif
+
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

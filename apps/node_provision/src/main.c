@@ -37,7 +37,11 @@
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_rng.h>
 #include <dw1000/dw1000_ftypes.h>
-#include <dw1000/dw1000_provision.h>
+
+#if MYNEWT_VAL(DW1000_PAN)
+#include <pan/dw1000_provision.h>
+#include <pan/dw1000_pan.h>
+#endif
 
 #define NUM_FRAMES 2
 #define NUM_NODES 32
@@ -91,8 +95,6 @@ int main(int argc, char **argv){
     hal_gpio_init_out(LED_3, 1);
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_softreset(inst);
-    dw1000_phy_init(inst, NULL);
 
     inst->PANID =  MYNEWT_VAL(DEVICE_PAN_ID);
     inst->my_short_address =  MYNEWT_VAL(DEVICE_ID);
