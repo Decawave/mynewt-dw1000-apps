@@ -130,11 +130,6 @@ static void nrange_complete_cb(struct os_event *ev) {
     if (inst->status.rx_timeout_error)
         printf("{\"utime\": %lu,\"timer_ev_cb\":\"rx_timeout_error\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
 
-    if (inst->status.start_tx_error || inst->status.start_rx_error || inst->status.rx_error
-          ||   inst->status.rx_timeout_error ){
-        dw1000_set_rx_timeout(inst, 0);
-        dw1000_start_rx(inst);
-    }
 
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
         previous_frame = previous_frame;
@@ -215,7 +210,6 @@ slot_timer_cb(struct os_event * ev){
     //Note: Time is referenced to the Rmarker symbol, to it is necessary to advance the rxtime by the SHR_duration such that the preamble is received.
     dx_time = (dx_time - ((uint64_t)ceilf(dw1000_usecs_to_dwt_usecs(dw1000_phy_SHR_duration(&inst->attrib))) << 16)) & 0xFFFFFFFE00UL;
 
-    dw1000_mac_framefilter(inst, DWT_FF_DATA_EN|DWT_FF_RSVD_EN);
     dw1000_set_delay_start(inst, dx_time);
     uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
                             + rng_config.tx_holdoff_delay
@@ -261,7 +255,6 @@ int main(int argc, char **argv){
     dw1000_set_panid(inst,inst->PANID);
     dw1000_set_address16(inst,inst->my_short_address);
     dw1000_mac_init(inst, NULL);
-    dw1000_mac_framefilter(inst, DWT_FF_RSVD_EN);
     dw1000_rng_init(inst, &rng_config, 0);
     //dw1000_rng_set_frames(inst, twr, sizeof(twr)/sizeof(nrng_frame_t));
 #if MYNEWT_VAL(DW1000_PAN)
@@ -285,7 +278,11 @@ int main(int argc, char **argv){
 
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
-    dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+    if(inst->slot_id == 1)
+        dw1000_ccp_start(inst, CCP_ROLE_MASTER);
+    else
+        dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
+    
 #endif
 
     for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)

@@ -60,7 +60,7 @@ dw1000_nranges_instance_t *nranges_instance = NULL;
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0300,      // Send Time delay in usec.
-    .rx_timeout_period = 0x1        // Receive response timeout in usec
+    .rx_timeout_period = 0x1,        // Receive response timeout in usec
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -115,7 +115,6 @@ slot_timer_cb(struct os_event *ev){
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->parent;
     dw1000_nranges_instance_t * nranges = nranges_instance;
-    nranges->t1_final_flag = 1;
 
     dw1000_ccp_instance_t * ccp = inst->ccp;
     uint16_t idx = slot->idx;
@@ -129,13 +128,14 @@ slot_timer_cb(struct os_event *ev){
     uint64_t dx_time = (ccp->epoch + (uint64_t) (idx * ((uint64_t)tdma->period << 16)/tdma->nslots));
 #endif
     dx_time = dx_time & 0xFFFFFFFE00UL;
-    //uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
-    if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG_EXT, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
+    
+    uint32_t tic = os_cputime_ticks_to_usecs(os_cputime_get32());
+    if(dw1000_nranges_request_delay_start(inst, 0xffff, dx_time, DWT_DS_TWR_NRNG, MYNEWT_VAL(NODE_START_SLOT_ID), MYNEWT_VAL(NODE_END_SLOT_ID)).start_tx_error){
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
         printf("{\"utime\": %lu,\"msg\": \"slot_timer_cb_%d:start_tx_error\"}\n",utime,idx);
     }
-    //uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
-    //printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
+    uint32_t toc = os_cputime_ticks_to_usecs(os_cputime_get32());
+    printf("{\"utime\": %lu,\"slot_timer_cb_tic_toc\": %lu}\n",toc,toc-tic);
     
     for(int i=0; i<nranges->nnodes; i++){
         nrng_frame_t *prev_frame = nranges->frames[i][FIRST_FRAME_IDX];
@@ -146,9 +146,9 @@ slot_timer_cb(struct os_event *ev){
             float range = dw1000_rng_tof_to_meters(dw1000_nranges_twr_to_tof_frames(frame, prev_frame));
             printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
             frame->code = DWT_DS_TWR_NRNG_END;
+            prev_frame->code = DWT_DS_TWR_NRNG_END;
         }
     }
-    nranges->resp_count = 0;
 }
 /*! 
  * @fn slot0_timer_cb(struct os_event * ev)
@@ -158,12 +158,11 @@ slot_timer_cb(struct os_event *ev){
  * @param inst - struct os_event *  
  * output parameters
  * returns none 
- */
 static void 
 slot0_timer_cb(struct os_event *ev){
     //printf("{\"utime\": %lu,\"msg\": \"%s:[%d]:slot0_timer_cb\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()),__FILE__, __LINE__); 
 }
-
+ */
 #if MYNEWT_VAL(N_RANGES_NPLUS_TWO_MSGS)
 void dw1000_nranges_pkg_init(void)
 {
@@ -221,7 +220,6 @@ int main(int argc, char **argv){
    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
     tdma_init(inst, MYNEWT_VAL(TDMA_PERIOD), NSLOTS);
-    tdma_assign_slot(inst->tdma, slot0_timer_cb, g_slot[0], &g_slot[0]);
     tdma_assign_slot(inst->tdma, slot_timer_cb, g_slot[SLOT], &g_slot[SLOT]);
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
