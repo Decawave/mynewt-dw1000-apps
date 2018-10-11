@@ -19,7 +19,7 @@
 #
 -->
 
-# Decawave TDMA Example
+# Decawave blemesh Example
 
 ## Overview
 The twr_node_mesh and twr_tag_mesh are simple examples that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
@@ -68,21 +68,21 @@ newt load twr_tag_mesh
 Below are the steps needed to follow for provisioning.To provision the devices,a bluetooth mesh app is required.
 Before this, you need to open the logs of 2 devices in their appropriate terminals, to check for OOB, an authentication key to do provisioning.
 
-1.Install bluetooth mesh app in your mobile.
-2.After flashing the devices, open mesh app in mobile.
-3.Enable bluetooth which the app asks for.
-4.Then a page is opened showing network and provision.
-5.Click on provision and scan for the devices.
-6.You can see nimble-mesh named devices in mobile with provision icon.
-7.Click on provision icon of one device and check the logs of both devices to know which is being provisioned.On the console, you can see
+1. Install bluetooth mesh app in your mobile.
+2. After flashing the devices, open mesh app in mobile.
+3. Enable bluetooth which the app asks for.
+4. Then a page is opened showing network and provision.
+5. Click on provision and scan for the devices.
+6. You can see nimble-mesh named devices in mobile with provision icon.
+7. Click on provision icon of one device and check the logs of both devices to know which is being provisioned.On the console, you can see
       ```
        proxy_connected: conn_handle 1
       ```
-8.Then it asks to enter device name, enter as 1, immediately you get a OOB on conosle, an authentication key to add the device to mesh.
-9.Enter the key and a configuration window is opened, which shows device_name, proxy, relay, functionality and group.
-10.Click on functionality and select on/off.
-11.Click on group and select Demo group and apply the changes.
-12.Then a bulb like icon is shown on mobile.click on it and check for LED functionality of your device.
+8. Then it asks to enter device name, enter as 1, immediately you get a OOB on conosle, an authentication key to add the device to mesh.
+9. Enter the key and a configuration window is opened, which shows device_name, proxy, relay, functionality and group.
+10. Click on functionality and select on/off.
+11. Click on group and select Demo group and apply the changes.
+12. Then a bulb like icon is shown on mobile.click on it and check for LED functionality of your device.
 
 After this come back to the provision page and follow same steps to provision other devices.
 
