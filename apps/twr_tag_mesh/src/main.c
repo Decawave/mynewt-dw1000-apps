@@ -48,7 +48,6 @@
 #include <dw1000/dw1000_pan.h>
 #endif
 
-
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -289,9 +288,12 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
+    
+    mesh_init();
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
@@ -336,8 +338,6 @@ int main(int argc, char **argv){
     tdma_assign_slot(inst->tdma, slot0_timer_cb, g_slot[0], &g_slot[0]);
     for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(inst->tdma, slot_timer_cb, g_slot[i], &g_slot[i]);
-
-    mesh_init();
 
     while (1) {
         os_eventq_run(os_eventq_dflt_get());

@@ -66,7 +66,7 @@ static uint16_t g_slot[MYNEWT_VAL(TDMA_NSLOTS)] = {0};
 
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0300,    // Send Time delay in usec.
-    .rx_timeout_period = 0x10       // Receive response timeout in usec
+    .rx_timeout_period = 0x10    // Receive response timeout in usec
 };
 
 
@@ -243,9 +243,12 @@ int main(int argc, char **argv){
     int rc;
 
     sysinit();
+
     hal_gpio_init_out(LED_BLINK_PIN, 1);
     hal_gpio_init_out(LED_1, 1);
     hal_gpio_init_out(LED_3, 1);
+
+    mesh_init();
 
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     
@@ -292,8 +295,6 @@ int main(int argc, char **argv){
     for (uint16_t i = 1; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         tdma_assign_slot(tdma, slot_timer_cb,  g_slot[i], &g_slot[i]);
     
-    mesh_init();
-
     while (1) {
         os_eventq_run(os_eventq_dflt_get());
     }
