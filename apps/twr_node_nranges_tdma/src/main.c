@@ -64,7 +64,7 @@ static uint16_t g_slot[NSLOTS] = {0};
 static dw1000_rng_config_t rng_config = {
     .tx_holdoff_delay = 0x0300,         // Send Time delay in usec.
     .rx_timeout_period = 0x1,         // Receive response timeout in usec
-    .tx_guard_delay = 0x0400
+    .tx_guard_delay = 0x0130
 };
 
 #if MYNEWT_VAL(DW1000_PAN)
@@ -278,7 +278,7 @@ int main(int argc, char **argv){
 
 #if MYNEWT_VAL(DW1000_CCP_ENABLED)
     dw1000_ccp_init(inst, 2, MYNEWT_VAL(UUID_CCP_MASTER));
-    if(inst->slot_id == 1)
+    if(inst->slot_id ==1)
         dw1000_ccp_start(inst, CCP_ROLE_MASTER);
     else
         dw1000_ccp_start(inst, CCP_ROLE_SLAVE);
