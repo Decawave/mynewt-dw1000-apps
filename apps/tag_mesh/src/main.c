@@ -88,10 +88,11 @@ static twr_frame_t twr[] = {
     }
 };
 
-void mesh_init(void);
 #define NSLOTS MYNEWT_VAL(TDMA_NSLOTS)
 
 static uint16_t g_slot[NSLOTS] = {0};
+
+void mesh_init(void);
 
 static bool error_cb(struct _dw1000_dev_instance_t * inst);
 
