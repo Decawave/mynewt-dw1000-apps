@@ -1,7 +1,7 @@
 syscfg.vals:
     # Route console to RTT
-    CONSOLE_UART: 0
-    CONSOLE_RTT: 1
+    CONSOLE_UART: 1
+    CONSOLE_RTT: 0
     DW1000_DEVICE_0: 1
     DW1000_SS_TWR_ENABLED: 1
     DW1000_DS_TWR_ENABLED: 1

@@ -22,7 +22,7 @@
 # Decawave blemesh Example
 
 ## Overview
-The twr_node_mesh and twr_tag_mesh are simple examples that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
+The node_mesh and tag_mesh are simple examples that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
 
 To run the below applications which are configured with UART, change the pins in hw/bsp/dwm1001/syscfg.yml
 
@@ -35,31 +35,31 @@ J-Link>exit
 $ 
 ```
 
-2. On 1st dwm1001-dev board build the mesh node (twr_node_mesh) applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the mesh node (node_mesh) applications for the DWM1001 module. 
 
 ```no-highlight
 
-newt target create twr_node_mesh
-newt target set twr_node_mesh app=apps/twr_node_mesh
-newt target set twr_node_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node_mesh build_profile=debug
-newt target set twr_node_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
-newt build twr_node_mesh
-newt load twr_node_mesh
+newt target create node_mesh
+newt target set node_mesh app=apps/node_mesh
+newt target set node_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set node_mesh build_profile=debug
+newt target set node_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
+newt build node_mesh
+newt load node_mesh
 
 ```
 
-3. On 2nd dwm1001-dev board build the mesh tag (twr_tag_mesh) applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the mesh tag (tag_mesh) applications for the DWM1001 module. 
 
 ```no-highlight
 
-newt target create twr_tag_mesh
-newt target set twr_tag_mesh app=apps/twr_tag_mesh
-newt target set twr_tag_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag_mesh build_profile=debug
-newt target set twr_tag_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x21, 0}'
-newt build twr_tag_mesh
-newt load twr_tag_mesh
+newt target create tag_mesh
+newt target set tag_mesh app=apps/tag_mesh
+newt target set tag_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set tag_mesh build_profile=debug
+newt target set tag_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x21, 0}'
+newt build tag_mesh
+newt load tag_mesh
 
 ```
 

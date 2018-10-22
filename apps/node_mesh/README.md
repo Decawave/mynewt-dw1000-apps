@@ -19,12 +19,12 @@
 #
 -->
 
-# Decawave TDMA Example
+# Decawave blemesh Example
 
 ## Overview
-The twr_node_tdma and twr_tag_tdma are simple examples that showcase the TDMA features within the core library. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task. Clock calibration and timescale compensation are enabled within the twr_tag_tdma application; this has the advantage of permitting single-sided two range exchange thus reducing the channel utilization. 
+The node_mesh and tag_mesh are simple examples that showcase the TDMA features along with mesh facility. The default behavior divides the TDMA_PERIOD into TDMA_NSLOTS and allocates slots to a single ranging task and able to provision the devices into mesh.
 
-Another advantege of wireless synchronization is the ability to turn-on transeiver is a just-in-time fashion thereby reducing the power comsumption. In these examples transeiver is turned on for approximatly 190 usec per tdma slot. 
+To run the below applications which are configured with UART, change the pins in hw/bsp/dwm1001/syscfg.yml
 
 1. To erase the default flash image that shipped with the DWM1001 boards.
 
@@ -35,58 +35,56 @@ J-Link>exit
 $ 
 ```
 
-2. On 1st dwm1001-dev board build the TDMA node (twr_node_tdma) applications for the DWM1001 module. 
+2. On 1st dwm1001-dev board build the mesh node (node_mesh) applications for the DWM1001 module. 
 
 ```no-highlight
 
-newt target create twr_node_tdma
-newt target set twr_node_tdma app=apps/twr_node_tdma
-newt target set twr_node_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_node_tdma build_profile=debug
-newt run twr_node_tdma 0
+newt target create node_mesh
+newt target set node_mesh app=apps/node_mesh
+newt target set node_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set node_mesh build_profile=debug
+newt target set node_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x20, 0}'
+newt build node_mesh
+newt load node_mesh
 
 ```
 
-3. On 2nd dwm1001-dev board build the TDMA tag (twr_tag_tdma) applications for the DWM1001 module. 
+3. On 2nd dwm1001-dev board build the mesh tag (tag_mesh) applications for the DWM1001 module. 
 
 ```no-highlight
 
-newt target create twr_tag_tdma
-newt target set twr_tag_tdma app=apps/twr_tag_tdma
-newt target set twr_tag_tdma bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set twr_tag_tdma build_profile=debug
-newt run twr_tag_tdma 0
+newt target create tag_mesh
+newt target set tag_mesh app=apps/tag_mesh
+newt target set tag_mesh bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
+newt target set tag_mesh build_profile=debug
+newt target set tag_mesh syscfg=BLE_MESH_PB_GATT=1:BLE_MESH_DEV_UUID='(uint8_t[16]){0x22, 0x21, 0}'
+newt build tag_mesh
+newt load tag_mesh
 
 ```
 
-5. On the console you should see the following expected result. 
+4. After flashing both the devices, your console will have both mesh advertising and ranging happening at a time.You have to provision the devices using mobile mesh app (Bluetooth mesh by siliocn labs).
 
-```no-highlight
+Below are the steps needed to follow for provisioning.To provision the devices,a bluetooth mesh app is required.
+Before this, you need to open the logs of 2 devices in their appropriate terminals, to check for OOB, an authentication key to do provisioning.
 
-telnet localhost 19021 
+1. Install bluetooth mesh app in your mobile.
+2. After flashing the devices, open mesh app in mobile.
+3. Enable bluetooth which the app asks for.
+4. Then a page is opened showing network and provision.
+5. Click on provision and scan for the devices.
+6. You can see nimble-mesh named devices in mobile with provision icon.
+7. Click on provision icon of one device and check the logs of both devices to know which is being provisioned.On the console, you can see
+      ```
+       proxy_connected: conn_handle 1
+      ```
+8. Then it asks to enter device name, enter as 1, immediately you get a OOB on conosle, an authentication key to add the device to mesh.
+9. Enter the key and a configuration window is opened, which shows device_name, proxy, relay, functionality and group.
+10. Click on functionality and select on/off.
+11. Click on group and select Demo group and apply the changes.
+12. Then a bulb like icon is shown on mobile.click on it and check for LED functionality of your device.
 
-....
-{"utime": 23859733,"tof": 1101004815,"range": 1036004551,"azimuth": 0,"res_req":"6003EB0", "rec_tra": "6003E60"}
-{"utime": 23873159,"tof": 1099956214,"range": 1034745086,"azimuth": 0,"res_req":"6004092", "rec_tra": "600403A"}
-{"utime": 23879880,"tof": 1102053369,"range": 1037263961,"azimuth": 0,"res_req":"6003F78", "rec_tra": "6003F1E"}
-....
-{"utime": 23920210,"tof": 1104150538,"range": 1039782852,"azimuth": 0,"res_req":"6003EFB", "rec_tra": "6003E97"}
-{"utime": 23926932,"tof": 1098383319,"range": 1033170778,"azimuth": 0,"res_req":"6003FE2", "rec_tra": "6003F92"}
-{"utime": 23933653,"tof": 1099825167,"range": 1034587686,"azimuth": 0,"res_req":"6003ECB", "rec_tra": "6003E76"}
-
-```
+After this come back to the provision page and follow same steps to provision other devices.
 
 
-6. Making sense of the results. 
-
-The sentense above are JSON strings. The underlying library does not support floating point printf so instead we choose to case the IEEE 754 floating-point type to a UINT32 and encapulate this within the JSON string. The decoder reverses the cast and retores the floating point representation without loss of precision.
-
-In matlab for example:
-You can use: 
->> tcp = tcpclient('127.0.0.1', 19021); % to open the socket.
->> line = read(tcp); % to read the json lines
->> line = jsondecode(line); % to parse the json string
->> range = typecast(uint32(line.range,'single'); % to restore range quantity to floating point. Note all units are SI units for so the range quantity is in meters.
-
-See the ./matlab/stats.m script for an example of parsing json strings.
 
