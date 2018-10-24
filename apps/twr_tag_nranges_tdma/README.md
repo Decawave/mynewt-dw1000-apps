@@ -39,15 +39,6 @@ newt target amend tag syscfg=DEVICE_ID=0x3333:SLOT_ID=3
 newt run tag 0
 
 ```
-### Building target for Clock master
-```no-highlight
-newt target create clock
-newt target set clock app=apps/clock_master
-newt target set clock bsp=@mynewt-dw1000-core/hw/bsp/dwm1001
-newt target set clock build_profile=debug
-newt run clock 0
-```
-
 The number of nodes to range with can be configured by setting the **N_NODES** on tag app during build time,
    (ex: for 3 nodes, use this command while building tag app **newt target amend tag syscfg=N_NODES=3** )
 

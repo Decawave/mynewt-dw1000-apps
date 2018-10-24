@@ -34,14 +34,12 @@ pkg.deps:
     - "@apache-mynewt-core/encoding/json"
     - "@mynewt-dw1000-core/hw/drivers/dw1000"
     - "@mynewt-dw1000-core/lib/nranges"
+    - "@mynewt-dw1000-core/lib/twr_ds_ext_nrng"
     - "@mynewt-dw1000-core/lib/dsp"
     - "@mynewt-dw1000-core/lib/tdma"
     - "@mynewt-dw1000-core/lib/ccp"
     - "@mynewt-timescale-lib/lib/timescale"
     - "@mynewt-timescale-lib/lib/clkcal"
-
-pkg.init:
-    dw1000_nranges_pkg_init: 410
 
 pkg.cflags:
     - "-std=gnu99"

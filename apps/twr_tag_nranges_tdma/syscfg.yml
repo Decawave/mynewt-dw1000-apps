@@ -7,9 +7,6 @@ syscfg.vals:
     DW1000_DEVICE_0: 1
     OS_SYSVIEW: 0 
     FLOAT_USER: 0
-    DW1000_SS_TWR_ENABLED: 1
-    DW1000_DS_TWR_ENABLED: 1
-    DW1000_DS_TWR_EXT_ENABLED: 1
     CLOCK_CALIBRATION_ENABLED: 1
     TIMESCALE_PROCESSING_ENABLED: 1
     ADAPTIVE_TIMESCALE_ENABLED: 1
@@ -18,6 +15,10 @@ syscfg.vals:
     DW1000_PAN: 0
     HARDFLOAT: 0
     TDMA_NSLOTS: 10
+    NRNG_NNODES: 4
+    #N-frames should be atleast nnodes*2
+    NRNG_NFRAMES: 8
+    NRNG_DEVICE_TYPE: 0
     
 syscfg.defs:
     DEVICE_ID:
@@ -28,10 +29,6 @@ syscfg.defs:
         description: >
             Clock Master UUID
         value: ((uint16_t){0x8000})
-    N_RANGES_NPLUS_TWO_MSGS:
-        description: >
-            To enable/disable the 2n+2ranges method
-        value: 1
     N_NODES:
         description: >
             Number of Nodes to range with
@@ -48,4 +45,7 @@ syscfg.defs:
         description: >
             Slot ID till which the nodes should respond
         value: 7
+    PANID:
+        description: PANID
+        value: ((uint16_t){0xDECA})
     
