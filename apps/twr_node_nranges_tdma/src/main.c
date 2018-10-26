@@ -88,7 +88,7 @@ static void nrange_complete_cb(struct os_event *ev) {
     if (frame->code == DWT_DS_TWR_NRNG_FINAL || frame->code == DWT_DS_TWR_NRNG_EXT_FINAL){
         previous_frame = previous_frame;
         uint32_t time_of_flight = (uint32_t) dw1000_nrng_twr_to_tof_frames(previous_frame, frame);
-        float range = dw1000_nrng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(previous_frame, frame));
+        float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(previous_frame, frame));
         float rssi = dw1000_get_rssi(inst);
         //print_frame("1st=", previous_frame);
         //print_frame("2nd=", frame);

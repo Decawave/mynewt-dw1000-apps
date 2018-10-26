@@ -103,7 +103,7 @@ slot_timer_cb(struct os_event *ev){
 
         if ((frame->code == DWT_DS_TWR_NRNG_FINAL && prev_frame->code == DWT_DS_TWR_NRNG_T2)\
              || (prev_frame->code == DWT_DS_TWR_NRNG_EXT_T2 && frame->code == DWT_DS_TWR_NRNG_EXT_FINAL)) {
-            float range = dw1000_nrng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(frame, prev_frame));
+            float range = dw1000_rng_tof_to_meters(dw1000_nrng_twr_to_tof_frames(frame, prev_frame));
             printf("  src_addr= 0x%X  dst_addr= 0x%X  range= %lu\n",prev_frame->src_address,prev_frame->dst_address, (uint32_t)(range*1000));
             frame->code = DWT_DS_TWR_NRNG_END;
             prev_frame->code = DWT_DS_TWR_NRNG_END;
