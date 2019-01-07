@@ -35,7 +35,6 @@ J-Link>erase
 J-Link>exit
 $ 
 ```
-
 ```no-highlight
 2. On 1st dwm1001-dev board build the ota_uwb_master applications for the DWM1001 module. 
 
@@ -47,9 +46,7 @@ newt target amend master syscfg="LOG_LEVEL=1"
 newt build master
 newt create-image master 1.0.0
 newt load master
-
 ```
-
 ```no-highlight
 3. On 2nd dwm1001-dev board build the ota_uwb_slave applications for the DWM1001 module. 
 
@@ -62,8 +59,7 @@ newt build slave
 newt create-image slave 1.0.0
 newt load slave
 ```
-
-## check whether master can talk to slave
+### check whether master can talk to slave
 ```
 img_list 0x1234 (Slave node address)
 Should get some logs like this
@@ -79,13 +75,11 @@ bootable : true
 Flags : 
 7b6af13ca48f82fe22e009393779a3100458c2dc99e4e86ea38922c0aec5380a
 With the above commands, you get the image slots of both the devices.
-
 ```
 ### Uploading an image to device
 ```
 Currently the master will upload the same image as it runs to the slave
 img_upload slot1 0x1234 (Slave node address)
-
 ```
 ## check for image status 
 ```
@@ -102,10 +96,8 @@ Version = 1.0.0
 bootable : true 
 Flags : 
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
-
 ```
 Now, you get status of primary and secondary slots with 2 different versioned images.
-
 ### Test the image
 ```
 img_set_state test 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7(32 byte hash of testing image) 0x1234(Slave node address)
@@ -121,13 +113,12 @@ Version = 1.0.0
 bootable : true 
 Flags : pending 
 76609ae104fd47f74413d1c39501569605a12c2d17f17922cc3e417448244ab7
-
 ```
 Now the images of secondary slot goes to pending state.
-**NOTE:** Then power OFF and ON both the slave node.
+
+**NOTE:** Then power OFF and ON the slave node.
 
 Once the device boots up
-
 ## Check for image status
 ```
 img_list 0x4321 (Slave node address)
@@ -142,19 +133,16 @@ Version = 1.0.0
 bootable : true 
 Flags : confirmed 
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
-
 ```
 After this, the uploaded image becomes active and will be running in primary slot.
-
 ### Confirming the image
 ```
 img_set_state confirm 0x4321 (Slave node address)
-
 ```
 After this, restart minicom for the logs.
 Then check for image status in the devices, see
-
 ## check for image status
+```
 Slot = 0 
 Version = 1.0.0 
 bootable : true 
@@ -166,4 +154,4 @@ Version = 1.0.0
 bootable : true 
 Flags : 
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
-
+```
