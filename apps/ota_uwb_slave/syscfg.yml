@@ -16,6 +16,11 @@ syscfg.vals:
     CONFIG_CLI: 1
     DW1000_CLI: 1
 
+    # Log reboot messages to a flash circular buffer.
+    REBOOT_LOG_FCB: 1
+    LOG_FCB: 1
+    CONFIG_FCB: 1
+
     # Enable newtmgr commands.
     STATS_NEWTMGR: 1
     LOG_NEWTMGR: 1

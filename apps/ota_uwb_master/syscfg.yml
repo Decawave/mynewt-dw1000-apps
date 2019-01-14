@@ -21,6 +21,10 @@ syscfg.vals:
     LOG_NEWTMGR: 1
     CONFIG_NEWTMGR: 1
 
+    REBOOT_LOG_FCB: 1
+    LOG_FCB: 1
+    CONFIG_FCB: 1
+
 syscfg.defs:
     UUID_CCP_MASTER:
         description: Clock Master UUID
