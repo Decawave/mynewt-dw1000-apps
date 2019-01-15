@@ -59,6 +59,40 @@ newt build slave
 newt create-image slave 1.0.0
 newt load slave
 ```
+
+#i## How to test
+
+1. Upload the image that needs to be sent to slave node using BLE to the master node
+
+### Create a newtmgr connection profile
+```
+newtmgr conn add ble type=ble connstring="peer_name=DECA_4321"   (ota_uwb_master)
+
+```
+## check whether newtmgr can communicate and check image status of the device
+```
+newtmgr image list -c ble
+
+```
+With the above command, you get the image slots of the device
+
+## Create a the image of interest 
+```
+newt create-image slave 2.0.0
+```
+### Uploading an image to device
+```
+newtmgr image upload -c ble /path of the image created in bin file/
+
+```
+## check for image status 
+```
+newtmgr image list -c ble
+
+```
+Now, you get status of primary and secondary slots with 2 different versioned images.
+
+2. Once the required image has been uploaded in the second slot start the upload of this image to slave node 
 ### check whether master can talk to slave
 ```
 img_list 0x1234 (Slave node address)
@@ -69,19 +103,14 @@ bootable : true
 Flags : active confirmed 
 7b6af13ca48f82fe22e009393779a3100458c2dc99e4e86ea38922c0aec5380a
 
-Slot = 1 
-Version = 0.0.0 
-bootable : true 
-Flags : 
-7b6af13ca48f82fe22e009393779a3100458c2dc99e4e86ea38922c0aec5380a
 With the above commands, you get the image slots of both the devices.
 ```
 ### Uploading an image to device
 ```
-Currently the master will upload the same image as it runs to the slave
 img_upload slot1 0x1234 (Slave node address)
+
 ```
-## check for image status 
+### check for image status 
 ```
 img_list 0x1234 (Slave node address)
 Should get some logs like this
@@ -121,7 +150,7 @@ Now the images of secondary slot goes to pending state.
 Once the device boots up
 ## Check for image status
 ```
-img_list 0x4321 (Slave node address)
+img_list 0x1234 (Slave node address)
 Slot = 0 
 Version = 1.0.0 
 bootable : true 
@@ -137,11 +166,10 @@ Flags : confirmed
 After this, the uploaded image becomes active and will be running in primary slot.
 ### Confirming the image
 ```
-img_set_state confirm 0x4321 (Slave node address)
+img_set_state confirm 0x1234 (Slave node address)
 ```
-After this, restart minicom for the logs.
-Then check for image status in the devices, see
-## check for image status
+Should get some logs like this
+
 ```
 Slot = 0 
 Version = 1.0.0 
@@ -155,3 +183,4 @@ bootable : true
 Flags : 
 6479df5a957bf7fa2e9b45e075788fd91e3fb15895affee06ff3b9cb4e546645
 ```
+

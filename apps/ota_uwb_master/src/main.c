@@ -38,7 +38,7 @@
 #include <dw1000/dw1000_phy.h>
 #include <dw1000/dw1000_mac.h>
 #include <dw1000/dw1000_ftypes.h>
-
+#include "bleprph.h"
 //#define DIAGMSG(s,u) printf(s,u)
 #ifndef DIAGMSG
 #define DIAGMSG(s,u)
@@ -50,7 +50,10 @@ int main(int argc, char **argv){
 
     sysinit();
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    
+    char name[32]={0};
+    sprintf(name,"%X-%04X",inst->PANID,inst->my_short_address);
+    prph_init(name);
+
     uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
     printf("{\"utime\": %lu,\"exec\": \"%s\"}\n",utime,__FILE__); 
     printf("{\"utime\": %lu,\"msg\": \"device_id = 0x%lX\"}\n",utime,inst->device_id);
