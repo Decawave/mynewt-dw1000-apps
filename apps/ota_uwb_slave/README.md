@@ -107,7 +107,7 @@ With the above commands, you get the image slots of both the devices.
 ```
 ### Uploading an image to device
 ```
-img_upload slot1 0x1234 (Slave node address)
+img_upload slot2 0x1234 (Slave node address)
 
 ```
 ### check for image status 
