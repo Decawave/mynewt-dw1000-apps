@@ -66,7 +66,7 @@ newt load slave
 
 ### Create a newtmgr connection profile
 ```
-newtmgr conn add ble type=ble connstring="peer_name=DECA_4321"   (ota_uwb_master)
+newtmgr conn add ble type=ble connstring="peer_name=DECA-4321"   (ota_uwb_master)
 
 ```
 ## check whether newtmgr can communicate and check image status of the device
