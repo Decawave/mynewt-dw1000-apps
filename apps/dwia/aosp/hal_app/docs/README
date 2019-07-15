@@ -1,0 +1,61 @@
+README for UWB Virtual Sensor HAL 
+=================================
+
+Pre-requisites
+--------------
+[.] Hikey960 device with all images, viz. system.img, boot.img, dt.img, userdata.img and vendor.img flashed from PathPartner, which contains the SPI driver and SPI device files.
+
+Source code details
+-------------------
+This directory uwb_virtualsensor_hal/code should be copied to hardware/nxp/
+[.] code/Android.mk - Android make file
+[.] code/entry.c - HAL layer interfacing with the driver
+[.] code/uwbvirtualsens.c - main() method to execute the HAL binary
+[.] code/linux - dependency include files
+
+Build details
+-------------
+cd $ANDROID_BUILD_TOP
+source build/envsetup.sh
+lunch hikey960-userdebug
+cd hardware/nxp/uwb_virtualsensor_hal/
+mm
+
+Binary details
+--------------
+uwbvirtualsens is generated at out/target/product/hikey960/system/vendor/bin/
+uwb-virtual-sensor-hal.so is generated at out/target/product/hikey960/system/vendor/lib/hw/
+uwb-virtual-sensor-hal.so is generated at out/target/product/hikey960/system/vendor/lib64/hw/
+
+NOTE: The pre-built binaries are also present in the directory bin/
+
+Push to device
+--------------
+adb root
+adb remount
+adb push $ANDROID_BUILD_TOP/out/target/product/hikey960/system/vendor/bin/uwbvirtualsens /system/vendor/bin/
+adb push $ANDROID_BUILD_TOP/out/target/product/hikey960/system/vendor/lib64/hw/uwb-virtual-sensor-hal.so system/vendor/lib64/hw/
+adb push $ANDROID_BUILD_TOP/out/target/product/hikey960/system/vendor/lib/hw/uwb-virtual-sensor-hal.so system/vendor/lib/hw/
+
+In order to push binaries from the release package to the device, use the below command.
+adb push bin/system/vendor/bin/uwbvirtualsens /system/vendor/bin/
+adb push bin/system/vendor/lib64/hw/uwb-virtual-sensor-hal.so system/vendor/lib64/hw/
+adb push bin/system/vendor/lib/hw/uwb-virtual-sensor-hal.so system/vendor/lib/hw/
+
+Execute the binary
+------------------
+adb shell
+/system/vendor/bin/uwbvirtualsens start
+
+Verify the logcat
+-----------------
+adb logcat > log1.txt
+In log1.txt, search for "utime" to get the JSON strings received from the SPI layer 
+In case of failure to see the above "utime" logs, "file open failed for /dev/dw1000 Write mode" log will indicate the most-probable cause of failure, i.e. the SPI Device file not present on the Hikey960 device Android file system. This will require flashing of Image files, with the device file.
+
+Screenshots
+-----------
+The screenshots in the docs/ directory of the release package are as below.
+[.] deviceSetup.png -> Device setup
+[.] successfulLogcat.png -> Logcat with JSON strings received successfully
+

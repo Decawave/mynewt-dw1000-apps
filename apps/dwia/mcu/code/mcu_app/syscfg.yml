@@ -1,0 +1,51 @@
+syscfg.vals:
+    # Route console to RTT
+    CONSOLE_UART: 0
+    CONSOLE_UART_BAUD: '1000000'
+    CONSOLE_UART_TX_BUF_SIZE: '1024'
+    CONSOLE_RTT: 1
+    DW1000_DEVICE_0: 1
+    FS_XTALT_AUTOTUNE_ENABLED: 0
+    DW1000_BIAS_CORRECTION_ENABLED: 0
+    PAN_ENABLED: 1
+    HARDFLOAT: 1
+    TDMA_NSLOTS: 32
+    WCS_VERBOSE: 1
+    RNG_VERBOSE: 0
+    STATS_NAMES: 1
+    STATS_CLI: 1
+    CONFIG_CLI: 1
+    DW1000_CLI: 1
+    CIR_VERBOSE: 0
+    CIR_SIZE: 8
+    CIR_OFFSET: 2
+    # Enable newtmgr commands.
+    STATS_NEWTMGR: 1
+    LOG_NEWTMGR: 1
+    CONFIG_NEWTMGR: 1
+    SHELL_TASK: 1
+    UART_0: 1
+    # Must enable either of SLAVE or MASTER
+    SPI_1_MASTER: 0
+    SPI_1_SLAVE: 1
+    SPI_1_SLAVE_PIN_SCK: 4
+    SPI_1_SLAVE_PIN_MOSI: 6
+    SPI_1_SLAVE_PIN_MISO: 7
+    SPI_1_SLAVE_PIN_SS: 3
+    # Default task settings
+    OS_MAIN_STACK_SIZE: 512
+
+#    DEVICE_ID: ((uint16_t){0x1234})
+syscfg.defs:
+    UUID_CCP_MASTER:
+        description: Clock Master UUID
+        value: ((uint64_t){0x8000})
+    SPITEST_SS_PIN:
+        description: 'SPI slave select pin number'
+        value: 3
+    SPITEST_S_NUM:
+        description: 'SPI peripheral number to use for slave'
+        value: 1
+    SPI_BAUDRATE:
+        description: 'BAUDRATE 8000kHz'
+        value: 500

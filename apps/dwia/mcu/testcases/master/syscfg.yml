@@ -1,0 +1,47 @@
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#  http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+#
+
+# Package: apps/spitest
+
+syscfg.vals:
+    SHELL_TASK: 1
+    UART_0: 1
+    # Must enable either of SLAVE or MASTER
+    SPI_1_MASTER: 1
+    SPI_1_SLAVE: 0
+    SPI_1_MASTER_PIN_SCK: 4
+    SPI_1_MASTER_PIN_MOSI: 6
+    SPI_1_MASTER_PIN_MISO: 7
+    CONSOLE_RTT: 0
+    CONSOLE_UART: 1
+    # Default task settings
+    OS_MAIN_STACK_SIZE: 512
+
+syscfg.defs:
+    SPITEST_SS_PIN:
+        description: 'SPI slave select pin number'
+        value: 3
+
+    SPITEST_M_NUM:
+        description: 'SPI peripheral number to use for master'
+        value: 1
+
+    SPI_BAUDRATE:
+        description: 'BAUDRATE 8000kHz'
+        value: 8000
+
