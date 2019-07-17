@@ -10,7 +10,7 @@ syscfg.vals:
     FS_XTALT_AUTOTUNE_ENABLED: 0
     DW1000_BIAS_CORRECTION_ENABLED: 0
     HARDFLOAT: 1
-    TDMA_NSLOTS: 160
+    TDMA_NSLOTS: 32
     RNG_VERBOSE: 0
     CCP_VERBOSE: 0
     STATS_NAMES: 1
@@ -42,7 +42,7 @@ syscfg.defs:
     UUID_CCP_MASTER:
         description: >
             Clock Master UUID
-        value: ((uint64_t){0x8000})  
+        value: ((uint64_t){0x8000})
     PANMASTER_ISSUER:
         description: 'Act as panmaster in the network'
         value: 1

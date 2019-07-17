@@ -121,9 +121,11 @@ spim_task_handler(void *arg)
             console_printf("%2x", spi_data.txbuf[i]);
         }
         console_printf("\n");
-        console_printf("received:%d ", spi_data.txlen);
+        console_printf("received:%d\n", spi_data.txlen);
         for (i = 0; i < spi_data.txlen; i++) {
-            console_printf("%2c", spi_data.rxbuf[i]);
+            console_printf("%2x ", spi_data.rxbuf[i]);
+            if((i+1)%25 == 0 )
+                console_printf("\n");
         }
         console_printf("\n\n");
         if(count == 0) os_time_delay(OS_TICKS_PER_SEC *10);

@@ -149,7 +149,7 @@ init_tasks(void)
     os_sem_init(&g_test_sem, 0);
     g_led_pin = LED_BLINK_PIN;
     hal_gpio_init_out(g_led_pin, 1);
-    
+
     spi_data.spi_num = MYNEWT_VAL(SPITEST_S_NUM);
     spi_data.txlen = TX_RX_BUF_LEN;
     spi_data.txrx_cb = spi_s_irq_handler;

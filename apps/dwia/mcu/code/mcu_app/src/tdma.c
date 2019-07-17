@@ -18,16 +18,15 @@ extern struct uwb dat;
 
 int slot_assign(void)
 {
-    uint16_t i;
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
 
-    for (i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
+    for (uint16_t i = 0; i < sizeof(g_slot)/sizeof(uint16_t); i++)
         g_slot[i] = i;
     tdma_assign_slot(inst->tdma, slot0_cb, g_slot[0], &g_slot[0]);
     tdma_assign_slot(inst->tdma, pan_slot_timer_cb, g_slot[1], &g_slot[1]);
 
-    for (i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i++)
-    tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
+    for (uint16_t i = 2; i < sizeof(g_slot)/sizeof(uint16_t); i+=4)
+        tdma_assign_slot(inst->tdma, slot_cb, g_slot[i], &g_slot[i]);
 
 
     return 0;
