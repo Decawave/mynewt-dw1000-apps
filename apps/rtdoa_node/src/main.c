@@ -92,10 +92,10 @@ uwb_config_updated()
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    if (os_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        if (os_sem_get_count(&ccp->sem) == 0) {
+        if (dpl_sem_get_count(&ccp->sem) == 0) {
             dw1000_start_rx(inst);
         }
         return 0;
@@ -114,9 +114,9 @@ pan_slot_timer_cb(struct os_event * ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t *ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->parent;
-    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t*)slot->arg;
+    dw1000_ccp_instance_t * ccp = tdma->ccp;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    dw1000_pan_instance_t * pan = (dw1000_pan_instance_t *)slot->arg;
 
     uint16_t idx = slot->idx;
     hal_gpio_write(LED_BLINK_PIN, idx%2);
@@ -181,13 +181,14 @@ nrng_slot_timer_cb(struct os_event *ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
-
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    
     uint16_t idx = slot->idx;
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
         return;
     }
 
@@ -196,17 +197,17 @@ nrng_slot_timer_cb(struct os_event *ev)
         uint64_t dx_time = tdma_tx_slot_start(tdma, idx) & 0xFFFFFFFFFE00UL;
         uint32_t slot_mask = 0xFFFF;
 
-        if(dw1000_nrng_request_delay_start(inst, BROADCAST_ADDRESS, dx_time,
+        if(dw1000_nrng_request_delay_start(nrng, BROADCAST_ADDRESS, dx_time,
                                            DWT_SS_TWR_NRNG, slot_mask, 0).start_tx_error){
             /* Do nothing */
         }
     } else {
         dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
         uint16_t timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(nrng_request_frame_t))
-            + inst->nrng->config.rx_timeout_delay;
+            + nrng->config.rx_timeout_delay;
 
         dw1000_set_rx_timeout(inst, timeout + 0x100);
-        dw1000_nrng_listen(inst, DWT_BLOCKING);
+        dw1000_nrng_listen(nrng, DWT_BLOCKING);
     }
 }
 
@@ -216,7 +217,7 @@ nrng_complete_cb(struct os_event *ev) {
     assert(ev->ev_arg != NULL);
 
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_nrng_instance_t * nrng = inst->nrng;
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
     for (int i=0;i<nrng->nframes;i++) {
@@ -258,13 +259,13 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     assert(tdma);
     dw1000_ccp_instance_t * ccp = tdma->ccp;
     assert(ccp);
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     assert(inst);
     dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
     assert(rtdoa);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -296,7 +297,7 @@ nmgr_slot_timer_cb(struct os_event * ev)
     // printf("idx %02d nmgr\n", idx);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
