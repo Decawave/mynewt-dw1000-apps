@@ -85,10 +85,10 @@ uwb_config_updated()
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    if (os_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        if (os_sem_get_count(&ccp->sem) == 0) {
+        if (dpl_sem_get_count(&ccp->sem) == 0) {
             dw1000_start_rx(inst);
         }
         return 0;
@@ -101,6 +101,69 @@ struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
 
+<<<<<<< HEAD
+=======
+static void 
+pan_slot_timer_cb(struct os_event * ev)
+{
+    assert(ev);
+    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_instance_t * tdma = slot->parent;
+    dw1000_ccp_instance_t * ccp = tdma->ccp;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    dw1000_pan_instance_t * pan = (dw1000_pan_instance_t *)slot->arg;
+
+    uint16_t idx = slot->idx;
+    hal_gpio_write(LED_BLINK_PIN, idx%2);
+    // printf("idx %02d pan slt:%d\n", idx, inst->slot_id);
+
+    if (dw1000_config_updated) {
+        dw1000_mac_config(inst, NULL);
+        dw1000_phy_config_txrf(inst, &inst->config.txrf);
+        dw1000_config_updated = false;
+    }
+    
+    if (inst->role&DW1000_ROLE_PAN_MASTER) {
+        /* Act as a Master Node in the network */
+        static int _pan_cycles = 0;
+
+        /* Broadcast a reset message to clear all leases */
+        if (_pan_cycles++ < 8) {
+            dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
+        } else {
+            uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
+            dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
+            dw1000_set_delay_start(inst, dx_time);
+            dw1000_set_on_error_continue(inst, true);
+            dw1000_pan_listen(pan, DWT_BLOCKING);
+        }
+    } else {
+        /* Act as a slave Node in the network */
+        if (pan->status.valid && dw1000_pan_lease_remaining(pan)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
+            uint16_t timeout;
+            if (pan->config->role == PAN_ROLE_RELAY) {
+                timeout = 3*ccp->period/tdma->nslots/4;
+            } else {
+                /* Only listen long enough to get any resets from master */
+                timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
+                    + MYNEWT_VAL(XTALT_GUARD);
+            }
+            dw1000_set_rx_timeout(inst, timeout);
+            dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
+            dw1000_set_on_error_continue(inst, true);
+            if (dw1000_pan_listen(pan, DWT_BLOCKING).start_rx_error) {
+                DIAGMSG("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
+            }
+        } else {
+            /* Subslot 0 is for master reset, subslot 1 is for sending requests */
+            uint64_t dx_time = tdma_tx_slot_start(tdma, (float)idx+1.0f/16);
+            dw1000_pan_blink(pan, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
+        }
+    }
+}
+    
+
+>>>>>>> Migrated os_ dpl_, Using dpl_event_get_arg APIs
 
 /**
  * @fn nrng_slot_timer_cb(struct os_event * ev)
@@ -114,14 +177,14 @@ nrng_slot_timer_cb(struct os_event *ev)
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
     tdma_instance_t * tdma = slot->parent;
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)slot->arg;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     dw1000_ccp_instance_t * ccp = tdma->ccp;
-
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
+    
     uint16_t idx = slot->idx;
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
+    if (dpl_sem_get_count(&ccp->sem) == 0 || idx == 0xffff) {
         return;
     }
 
@@ -149,7 +212,8 @@ nrng_complete_cb(struct os_event *ev) {
     assert(ev != NULL);
     assert(ev->ev_arg != NULL);
 
-    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)ev->ev_arg;
+    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
+    dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     nrng_frame_t * frame = nrng->frames[(nrng->idx)%nrng->nframes];
 
     for (int i=0;i<nrng->nframes;i++) {
@@ -198,7 +262,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     assert(rtdoa);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -230,7 +294,7 @@ nmgr_slot_timer_cb(struct os_event * ev)
     // printf("idx %02d nmgr\n", idx);
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
