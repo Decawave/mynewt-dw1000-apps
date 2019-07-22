@@ -102,7 +102,7 @@ complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
     if(inst->fctrl != FCNTL_IEEE_RANGE_16){
         return false;
     }
-    dw1000_rng_instance_t * rng = inst->rng; 
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t *)cbs->inst_ptr;
 
     g_idx_latest = (rng->idx)%rng->nframes; // Store valid frame pointer
     os_callout_init(&slot_callout, os_eventq_dflt_get(), slot_complete_cb, inst);
@@ -131,7 +131,9 @@ static void slot_complete_cb(struct os_event *ev)
   
     hal_gpio_toggle(LED_BLINK_PIN);
     dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *)ev->ev_arg;
-    dw1000_rng_instance_t * rng = inst->rng; 
+    dw1000_rng_instance_t * rng = (dw1000_rng_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RNG);
+
+
     twr_frame_t * frame = rng->frames[(g_idx_latest)%rng->nframes];
 
     if (frame->code == DWT_DS_TWR_FINAL || frame->code == DWT_DS_TWR_EXT_FINAL) {
@@ -184,23 +186,27 @@ uwb_config_updated()
 }
 
 static void 
-pan_slot_timer_cb(struct os_event * ev)
+pan_slot_timer_cb(struct dpl_event * ev)
 {
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
+    
     uint16_t idx = slot->idx;
 
 #if MYNEWT_VAL(PANMASTER_ISSUER)
     /* Listen for pan requests */
-    dw1000_set_rx_timeout(inst, inst->ccp->period/tdma->nslots/2);
-    dw1000_set_delay_start(inst, tdma_rx_slot_start(inst, idx));
+    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+
+    dw1000_set_rx_timeout(inst, ccp->period/tdma->nslots/2);
+    dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
     dw1000_pan_listen(inst, DWT_BLOCKING);
 #else
 
-    if (inst->pan->status.valid) return;
+    dw1000_pan_instance_t * pan = (dw1000_pan_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_PAN);
+    if (pan->status.valid) return;
     dw1000_pan_blink(inst, NTWR_ROLE_NODE, DWT_BLOCKING, tdma_tx_slot_start(inst, idx));
 #endif // PANMASTER_ISSUER
 }
@@ -226,9 +232,9 @@ static void
 slot_cb(struct os_event * ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_dev_instance_t * inst = tdma->parent;
+    dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
 
     if (dw1000_config_updated) {
