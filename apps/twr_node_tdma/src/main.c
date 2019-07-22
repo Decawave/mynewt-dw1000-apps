@@ -200,7 +200,7 @@ static void
 slot_cb(struct os_event * ev){
     assert(ev);
 
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
