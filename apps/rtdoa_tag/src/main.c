@@ -81,7 +81,7 @@ static void low_battery_mode();
  * @fn Event callback function for sensor events
 */
 static void
-sensor_timer_ev_cb(struct os_event *ev)
+sensor_timer_ev_cb(struct dpl_event *ev)
 {
     assert(ev != NULL);
     static uint32_t last_batt_update = 0;
@@ -171,10 +171,10 @@ early_exit:
 static void
 init_timer(void)
 {
-    os_callout_init(&sensor_callout, os_eventq_dflt_get(), sensor_timer_ev_cb, NULL);
+    dpl_callout_init(&sensor_callout, dpl_eventq_dflt_get(), sensor_timer_ev_cb, NULL);
 #if MYNEWT_VAL(IMU_RATE)
     /* Kickoff a new imu reading directly */
-    os_callout_reset(&sensor_callout, 0);
+    dpl_callout_reset(&sensor_callout, 0);
 #endif
 }
 
@@ -185,11 +185,11 @@ uwb_config_updated()
     /* Workaround in case we're stuck waiting for ccp with the
      * wrong radio settings */
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
-    if (os_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
+    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    if (dpl_sem_get_count(&ccp->sem) == 0 || !ccp->status.valid) {
         dw1000_mac_config(inst, NULL);
         dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        if (os_sem_get_count(&ccp->sem) == 0) {
+        if (dpl_sem_get_count(&ccp->sem) == 0) {
             dw1000_start_rx(inst);
         }
         return 0;
@@ -209,18 +209,18 @@ struct uwbcfg_cbs uwb_cb = {
  *
  */
 static void 
-rtdoa_slot_timer_cb(struct os_event *ev)
+rtdoa_slot_timer_cb(struct dpl_event *ev)
 {
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t *ccp = tdma->ccp;
+    dw1000_ccp_instance_t * ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)slot->arg;
+    dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t *)slot->arg;
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -231,7 +231,7 @@ rtdoa_slot_timer_cb(struct os_event *ev)
     }
     hal_gpio_write(LED_BLINK_PIN,0);
 
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
     uint64_t measurement_ts = wcs_local_to_master64(ccp->wcs, dx_time);
@@ -243,12 +243,12 @@ static void
 nmgr_slot_timer_cb(struct os_event * ev)
 {
     assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) ev->ev_arg;
+    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
     tdma_instance_t * tdma = slot->parent;
     dw1000_ccp_instance_t *ccp = tdma->ccp;
     dw1000_dev_instance_t * inst = tdma->dev_inst;
     uint16_t idx = slot->idx;
-    nmgr_uwb_instance_t* nmgruwb = (nmgr_uwb_instance_t*)slot->arg;
+    nmgr_uwb_instance_t * nmgruwb = (nmgr_uwb_instance_t *)slot->arg;
     assert(nmgruwb);
     // printf("idx %02d nmgr\n", idx);
 
@@ -259,7 +259,7 @@ nmgr_slot_timer_cb(struct os_event * ev)
     }
 
     /* Avoid colliding with the ccp */
-    if (os_sem_get_count(&ccp->sem) == 0) {
+    if (dpl_sem_get_count(&ccp->sem) == 0) {
         return;
     }
 
@@ -277,7 +277,7 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     /* Pan is slot 1,2 */
     tdma_instance_t * tdma = (tdma_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_TDMA);
     assert(tdma);
-    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
+    nmgr_uwb_instance_t * nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
     assert(nmgruwb);
     dw1000_rtdoa_instance_t * rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
     assert(rtdoa);
@@ -336,7 +336,7 @@ low_battery_mode()
         for (int i=0;i<50;i++) {
             /* Consume any events */
             struct os_event *ev;
-            ev = os_eventq_get_no_wait(os_eventq_dflt_get());
+            ev = dpl_eventq_get_no_wait(os_eventq_dflt_get());
             if (ev != NULL) {
                 ev->ev_cb(ev);
             }
