@@ -101,69 +101,6 @@ struct uwbcfg_cbs uwb_cb = {
     .uc_update = uwb_config_updated
 };
 
-<<<<<<< HEAD
-=======
-static void 
-pan_slot_timer_cb(struct dpl_event * ev)
-{
-    assert(ev);
-    tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
-    tdma_instance_t * tdma = slot->parent;
-    dw1000_ccp_instance_t * ccp = tdma->ccp;
-    dw1000_dev_instance_t * inst = tdma->dev_inst;
-    dw1000_pan_instance_t * pan = (dw1000_pan_instance_t *)slot->arg;
-
-    uint16_t idx = slot->idx;
-    hal_gpio_write(LED_BLINK_PIN, idx%2);
-    // printf("idx %02d pan slt:%d\n", idx, inst->slot_id);
-
-    if (dw1000_config_updated) {
-        dw1000_mac_config(inst, NULL);
-        dw1000_phy_config_txrf(inst, &inst->config.txrf);
-        dw1000_config_updated = false;
-    }
-    
-    if (inst->role&DW1000_ROLE_PAN_MASTER) {
-        /* Act as a Master Node in the network */
-        static int _pan_cycles = 0;
-
-        /* Broadcast a reset message to clear all leases */
-        if (_pan_cycles++ < 8) {
-            dw1000_pan_reset(pan, tdma_tx_slot_start(tdma, idx));
-        } else {
-            uint64_t dx_time = tdma_rx_slot_start(tdma, idx);
-            dw1000_set_rx_timeout(inst, 3*ccp->period/tdma->nslots/4);
-            dw1000_set_delay_start(inst, dx_time);
-            dw1000_set_on_error_continue(inst, true);
-            dw1000_pan_listen(pan, DWT_BLOCKING);
-        }
-    } else {
-        /* Act as a slave Node in the network */
-        if (pan->status.valid && dw1000_pan_lease_remaining(pan)>MYNEWT_VAL(PAN_LEASE_EXP_MARGIN)) {
-            uint16_t timeout;
-            if (pan->config->role == PAN_ROLE_RELAY) {
-                timeout = 3*ccp->period/tdma->nslots/4;
-            } else {
-                /* Only listen long enough to get any resets from master */
-                timeout = dw1000_phy_frame_duration(&inst->attrib, sizeof(sizeof(struct _pan_frame_t)))
-                    + MYNEWT_VAL(XTALT_GUARD);
-            }
-            dw1000_set_rx_timeout(inst, timeout);
-            dw1000_set_delay_start(inst, tdma_rx_slot_start(tdma, idx));
-            dw1000_set_on_error_continue(inst, true);
-            if (dw1000_pan_listen(pan, DWT_BLOCKING).start_rx_error) {
-                DIAGMSG("{\"utime\": %lu,\"msg\": \"pan_listen_err\"}\n",os_cputime_ticks_to_usecs(os_cputime_get32()));
-            }
-        } else {
-            /* Subslot 0 is for master reset, subslot 1 is for sending requests */
-            uint64_t dx_time = tdma_tx_slot_start(tdma, (float)idx+1.0f/16);
-            dw1000_pan_blink(pan, NTWR_ROLE_NODE, DWT_BLOCKING, dx_time);
-        }
-    }
-}
-    
-
->>>>>>> Migrated os_ dpl_, Using dpl_event_get_arg APIs
 
 /**
  * @fn nrng_slot_timer_cb(struct os_event * ev)
@@ -229,7 +166,6 @@ nrng_complete_cb(struct dpl_event *ev) {
     }
 }
 
-<<<<<<< HEAD
 static struct os_event slot_event;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
@@ -237,14 +173,6 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
         return false;
     }
     os_eventq_put(os_eventq_dflt_get(), &slot_event);
-=======
-static struct dpl_callout slot_callout;
-static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    dpl_eventq_put(dpl_eventq_dflt_get(), &slot_callout.c_ev);
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
     return true;
 }
 
@@ -326,7 +254,6 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     tdma_assign_slot(tdma, dw1000_pan_slot_timer_cb, 1, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
-<<<<<<< HEAD
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     assert(nrng);
     tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nrng);
@@ -334,13 +261,6 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
     assert(nmgruwb);
     dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
-=======
-    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
-    assert(nmgruwb);
-    tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nmgruwb);
-
-    dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
     assert(rtdoa);
     
     for (i=2;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
@@ -374,14 +294,10 @@ main(int argc, char **argv)
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_mac_append_interface(inst, &cbs);
-<<<<<<< HEAD
     slot_event.ev_cb  = nrng_complete_cb;
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     assert(nrng);
     slot_event.ev_arg = (void*)nrng;
-=======
-    dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, inst);
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
 
     inst->config.rxauto_enable = 0;
     inst->config.trxoff_enable = 1;
