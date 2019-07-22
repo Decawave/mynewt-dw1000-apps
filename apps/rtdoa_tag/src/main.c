@@ -65,7 +65,7 @@
 #include "sensor/gyro.h"
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
-static struct os_callout sensor_callout;
+static struct dpl_callout sensor_callout;
 static float g_battery_voltage = 5.1;
 static void low_battery_mode();
 
@@ -197,11 +197,11 @@ rtdoa_slot_timer_cb(struct dpl_event *ev)
     uint64_t measurement_ts = wcs_local_to_master64(ccp->wcs, dx_time);
     rtdoa_backhaul_set_ts(measurement_ts>>16);
     rtdoa_backhaul_send(inst, rtdoa, 0); //tdma_tx_slot_start(inst, idx+2)
-    os_callout_reset(&sensor_callout, 0);
+    dpl_callout_reset(&sensor_callout, 0);
 }
 
 static void 
-nmgr_slot_timer_cb(struct os_event * ev)
+nmgr_slot_timer_cb(struct dpl_event * ev)
 {
     assert(ev);
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
@@ -291,8 +291,8 @@ low_battery_mode()
         }
         for (int i=0;i<50;i++) {
             /* Consume any events */
-            struct os_event *ev;
-            ev = dpl_eventq_get_no_wait(os_eventq_dflt_get());
+            struct dpl_event *ev;
+            ev = dpl_eventq_get_no_wait(dpl_eventq_dflt_get());
             if (ev != NULL) {
                 ev->ev_cb(ev);
             }
@@ -341,7 +341,7 @@ main(int argc, char **argv)
     printf(",\"slot_id\"=\"%d\"",inst->slot_id);
     printf(",\"xtal_trim\"=\"%X\"}\n",inst->xtal_trim);
 
-    dw1000_ccp_instance_t *ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
+    dw1000_ccp_instance_t * ccp = (dw1000_ccp_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_CCP);
     assert(ccp);
 
     tdma_allocate_slots(inst);
