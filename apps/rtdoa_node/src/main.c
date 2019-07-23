@@ -233,8 +233,6 @@ nrng_complete_cb(struct dpl_event *ev) {
     }
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
 static struct os_event slot_event;
 static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs)
 {
@@ -242,19 +240,6 @@ static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * c
         return false;
     }
     os_eventq_put(os_eventq_dflt_get(), &slot_event);
-=======
-=======
->>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
-static struct dpl_callout slot_callout;
-static bool complete_cb(dw1000_dev_instance_t * inst, dw1000_mac_interface_t * cbs){
-    if(inst->fctrl != FCNTL_IEEE_RANGE_16){
-        return false;
-    }
-    dpl_eventq_put(dpl_eventq_dflt_get(), &slot_callout.c_ev);
-<<<<<<< HEAD
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
-=======
->>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
     return true;
 }
 
@@ -337,28 +322,13 @@ tdma_allocate_slots(dw1000_dev_instance_t * inst)
     tdma_assign_slot(tdma, pan_slot_timer_cb, 2, (void*)pan);
 
     /* anchor-to-anchor range slot is 31 */
-<<<<<<< HEAD
-<<<<<<< HEAD
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     assert(nrng);
     tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nrng);
 
     nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
-=======
-    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
->>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
     assert(nmgruwb);
     dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t*)dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
-=======
-    nmgr_uwb_instance_t *nmgruwb = (nmgr_uwb_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_NMGR_UWB);
-    assert(nmgruwb);
-    tdma_assign_slot(tdma, nrng_slot_timer_cb, 31, (void*)nmgruwb);
-
-    dw1000_rtdoa_instance_t* rtdoa = (dw1000_rtdoa_instance_t *) dw1000_mac_find_cb_inst_ptr(inst, DW1000_RTDOA);
-<<<<<<< HEAD
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
-=======
->>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
     assert(rtdoa);
     
     for (i=3;i < MYNEWT_VAL(TDMA_NSLOTS);i++) {
@@ -392,18 +362,10 @@ main(int argc, char **argv)
     
     dw1000_dev_instance_t * inst = hal_dw1000_inst(0);
     dw1000_mac_append_interface(inst, &cbs);
-<<<<<<< HEAD
-<<<<<<< HEAD
     slot_event.ev_cb  = nrng_complete_cb;
     dw1000_nrng_instance_t * nrng = (dw1000_nrng_instance_t *)dw1000_mac_find_cb_inst_ptr(inst, DW1000_NRNG);
     assert(nrng);
     slot_event.ev_arg = (void*)nrng;
-=======
-    dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, inst);
->>>>>>> Using dpl_event_get_arg API. Migrate from os_ to dpl_
-=======
-    dpl_callout_init(&slot_callout, dpl_eventq_dflt_get(), nrng_complete_cb, inst);
->>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
 
     inst->config.rxauto_enable = 0;
     inst->config.trxoff_enable = 1;
