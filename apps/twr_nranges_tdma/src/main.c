@@ -215,8 +215,8 @@ static void
 pan_complete_cb(struct dpl_event * ev)
 {
     assert(ev != NULL);
-    assert(dpl_event_get_arg(ev) != NULL);
-    dw1000_dev_instance_t * inst = (dw1000_dev_instance_t *) dpl_event_get_arg(ev);
+    assert(dpl_event_get_arg(ev));
+    dw1000_pan_instance_t *pan = (dw1000_pan_instance_t *)dpl_event_get_arg(ev);
     
     if (pan->dev_inst->slot_id != 0xffff) {
         uint32_t utime = os_cputime_ticks_to_usecs(os_cputime_get32());
