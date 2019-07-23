@@ -65,10 +65,14 @@
 #include "sensor/gyro.h"
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
+<<<<<<< HEAD
 static struct os_callout sensor_callout;
 #if MYNEWT_VAL(IMU_RATE)
 static int imu_reset_ticks = OS_TICKS_PER_SEC/MYNEWT_VAL(IMU_RATE);
 #endif
+=======
+static struct dpl_callout sensor_callout;
+>>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
 static float g_battery_voltage = 5.1;
 static void low_battery_mode();
 
@@ -81,11 +85,15 @@ static void low_battery_mode();
  * @fn Event callback function for sensor events
 */
 static void
+<<<<<<< HEAD
 sensor_timer_ev_cb(struct dpl_event *ev)
 {
     assert(ev != NULL);
     static uint32_t last_batt_update = 0;
     static uint32_t last_mp_update = 0;
+=======
+sensor_timer_ev_cb(struct dpl_event *ev) {
+>>>>>>> 6f72fbe3c02297aa5b71c70d38f7321210da9653
     const float mv2V = 0.001f;
     int rc;
     struct sensor *s;
