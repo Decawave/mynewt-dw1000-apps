@@ -65,10 +65,7 @@
 #include "sensor/gyro.h"
 #include "sensor/mag.h"
 #include "sensor/pressure.h"
-static struct os_callout sensor_callout;
-#if MYNEWT_VAL(IMU_RATE)
-static int imu_reset_ticks = OS_TICKS_PER_SEC/MYNEWT_VAL(IMU_RATE);
-#endif
+static struct dpl_callout sensor_callout;
 static float g_battery_voltage = 5.1;
 static void low_battery_mode();
 
