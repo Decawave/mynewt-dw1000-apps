@@ -44,7 +44,7 @@ void dwm1001_spi_cfg(struct spi_cfg_data * params, void *arg)
 {
     struct hal_spi_settings my_spi;
     my_spi.data_order = HAL_SPI_MSB_FIRST;
-    my_spi.data_mode = HAL_SPI_MODE0;
+    my_spi.data_mode = HAL_SPI_MODE3;
     my_spi.baudrate = MYNEWT_VAL(SPI_BAUDRATE);
     my_spi.word_size = HAL_SPI_WORD_SIZE_8BIT;
     assert(hal_spi_config(params->spi_num, &my_spi) == 0);

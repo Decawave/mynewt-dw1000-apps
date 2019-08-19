@@ -3,10 +3,11 @@
     This app verifies the SPI communication between the two dwm1001 devices whose SPI pins are externally connected to each other.
 One device should be configured as SPI Master and other should acts as SPI Slave. Master Initiates the communication by periodically sending
 the init message to slave device. Slave device upon receiving the init message initiates ranging and triggers GPIO interrupts.
+Note: Use repo - mynewt-dw1000-core, branch - master, commit id - dd8e62594cf138aca51a5ce0f716bd2f964b994a for core sync-up
 
 ## Build commands for three targets
 
-1. Flash SPI Master on device one
+1. Optional: Flash SPI Master on device one
 
 ```no-highlight
 
