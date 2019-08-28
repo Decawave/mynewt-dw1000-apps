@@ -197,7 +197,7 @@ uwb_config_updated()
  */
    
 static void 
-slot_cb(struct os_event * ev){
+slot_cb(struct dpl_event * ev){
     assert(ev);
 
     tdma_slot_t * slot = (tdma_slot_t *) dpl_event_get_arg(ev);
