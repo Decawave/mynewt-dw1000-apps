@@ -31,7 +31,9 @@
 #include "mcu/mcu_sim.h"
 #endif
 
+#if MYNEWT_VAL(BLE_ENABLED)
 #include "bleprph/bleprph.h"
+#endif
 
 #include "sensor/sensor.h"
 #include "sensor/accel.h"
