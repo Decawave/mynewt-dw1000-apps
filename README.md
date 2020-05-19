@@ -18,7 +18,7 @@
 # under the License.
 #
 -->
-
+![decawave is now qorvo](https://github.org/Decawave/uwb-core/docs/2018_Decawave_Logo_Horizontal.png)
 # Decawave DW1000 Applications 
 [![Build Status](https://travis-ci.org/Decawave/mynewt-dw1000-apps.svg?branch=master)](https://travis-ci.org/Decawave/mynewt-dw1000-apps)
 
